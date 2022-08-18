@@ -1,0 +1,20 @@
+# permissions for end users to view kinkcontrolplanes.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kinkcontrolplane-viewer-role
+rules:
+- apiGroups:
+  - controlplane.cluster.x-k8s.io
+  resources:
+  - kinkcontrolplanes
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - controlplane.cluster.x-k8s.io
+  resources:
+  - kinkcontrolplanes/status
+  verbs:
+  - get

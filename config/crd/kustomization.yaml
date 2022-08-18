@@ -1,0 +1,35 @@
+commonLabels:
+  cluster.x-k8s.io/v1alpha3: v1alpha3
+  cluster.x-k8s.io/v1alpha4: v1alpha4
+  cluster.x-k8s.io/v1beta1: v1beta1
+
+# This kustomization.yaml is not intended to be run by itself,
+# since it depends on service name and namespace that are out of this kustomize package.
+# It should be run by config/default
+resources:
+- bases/controlplane.cluster.x-k8s.io_kinkcontrolplanes.yaml
+- bases/infrastructure.cluster.x-k8s.io_kinkmachinetemplates.yaml
+- bases/infrastructure.cluster.x-k8s.io_kinkmachines.yaml
+- bases/infrastructure.cluster.x-k8s.io_kinkclusters.yaml
+#+kubebuilder:scaffold:crdkustomizeresource
+
+patchesStrategicMerge:
+# [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix.
+# patches here are for enabling the conversion webhook for each CRD
+#- patches/webhook_in_kinkcontrolplanes.yaml
+#- patches/webhook_in_kinkmachinetemplates.yaml
+#- patches/webhook_in_kinkmachines.yaml
+#- patches/webhook_in_kinkclusters.yaml
+#+kubebuilder:scaffold:crdkustomizewebhookpatch
+
+# [CERTMANAGER] To enable cert-manager, uncomment all the sections with [CERTMANAGER] prefix.
+# patches here are for enabling the CA injection for each CRD
+#- patches/cainjection_in_kinkcontrolplanes.yaml
+#- patches/cainjection_in_kinkmachinetemplates.yaml
+#- patches/cainjection_in_kinkmachines.yaml
+#- patches/cainjection_in_kinkclusters.yaml
+#+kubebuilder:scaffold:crdkustomizecainjectionpatch
+
+# the following config is for teaching kustomize how to do kustomization for CRDs.
+configurations:
+- kustomizeconfig.yaml
