@@ -161,14 +161,10 @@ spec:
               clusterName:
                 description: ClusterName is the name of cluster.
                 type: string
-              credentialsName:
-                description: CredentialsName is the credential for worker to join
-                  tenant kubernetes master.
-                type: string
-              kubeconf:
-                description: Kubeconf is the credential used to access tenant kubernetes
-                  master.
-                type: string
+              replicas:
+                description: Replicas is the replicas of control plane.
+                format: int32
+                type: integer
               version:
                 description: Version is the version of kubernetes for the cluster.
                 type: string
@@ -249,6 +245,10 @@ spec:
                   required for the deployment to have 100% available capacity. They
                   may either be machines that are running but not yet ready or machines
                   that still have not been created.
+                format: int32
+                type: integer
+              updatedReplicas:
+                description: Total number of updated control plane machines.
                 format: int32
                 type: integer
               version:

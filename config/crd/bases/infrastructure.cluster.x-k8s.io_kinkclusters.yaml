@@ -34,11 +34,6 @@ spec:
             type: object
           spec:
             description: KinkClusterSpec defines the desired state of KinkCluster
-            properties:
-              foo:
-                description: Foo is an example field of KinkCluster. Edit kinkcluster_types.go
-                  to remove/update
-                type: string
             type: object
           status:
             description: KinkClusterStatus defines the observed state of KinkCluster
