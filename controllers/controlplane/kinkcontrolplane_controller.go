@@ -197,9 +197,14 @@ func (r *KinkControlPlaneReconciler) updateKinkCtlPlaneStatus(ctx context.Contex
 	if kcp.Status.ReadyReplicas > 0 {
 		kcp.Status.Initialized = true
 		kcp.Status.Ready = true
-	} else {
-		reason := "no enough ready control planes"
 
+		kcp.Status.FailureReason = nil
+		kcp.Status.FailureMessage = nil
+	} else {
+		kcp.Status.Initialized = false
+		kcp.Status.Ready = false
+
+		reason := "no enough ready control planes"
 		kcp.Status.FailureReason = &reason
 		kcp.Status.FailureMessage = &reason
 	}
