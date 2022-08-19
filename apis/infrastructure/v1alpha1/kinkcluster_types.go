@@ -18,14 +18,41 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // KinkClusterSpec defines the desired state of KinkCluster
 type KinkClusterSpec struct {
+	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
+	// +optional
+	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint,omitempty"`
 }
 
 // KinkClusterStatus defines the observed state of KinkCluster
 type KinkClusterStatus struct {
+	// LastUpdated identifies when this status was last observed.
+	// +optional
+	LastUpdated *metav1.Time `json:"lastUpdated,omitempty"`
+
+	// FailureReason indicates that there is a fatal problem reconciling the
+	// state, and will be set to a token value suitable for
+	// programmatic interpretation.
+	// +optional
+	FailureReason *string `json:"failureReason,omitempty"`
+
+	// FailureMessage indicates that there is a fatal problem reconciling the
+	// state, and will be set to a descriptive error message.
+	// +optional
+	FailureMessage *string `json:"failureMessage,omitempty"`
+
+	// Ready denotes that the cluster (infrastructure) is ready.
+	// +optional
+	Ready bool `json:"ready"`
+
+	// Conditions defines current service state of the cluster.
+	// +optional
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true
