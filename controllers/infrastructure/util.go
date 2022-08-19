@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package infrastructure
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ import (
 	"openbce.io/kink/apis/infrastructure/v1beta1"
 )
 
-func GetControlPlaneRole(pod *metav1.ObjectMeta) (v1beta1.ControlPlaneRole, error) {
+func getControlPlaneRole(pod *metav1.ObjectMeta) (v1beta1.ControlPlaneRole, error) {
 	if pod == nil || pod.Labels == nil {
 		return v1beta1.Unkonwn, fmt.Errorf("pod is nil")
 	}

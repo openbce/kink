@@ -18,13 +18,10 @@ package templates
 
 import (
 	"fmt"
-
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/utils/pointer"
-	"sigs.k8s.io/cluster-api/util/secret"
-
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
 	infrav1beta1 "openbce.io/kink/apis/infrastructure/v1beta1"
@@ -40,7 +37,7 @@ func ApiServerPodTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.Kink
 		BlockOwnerDeletion: pointer.BoolPtr(true),
 	}
 
-	caName := fmt.Sprintf("%s-%s", cluster.Name, secret.ClusterCA)
+	volumes, mounts := getSecretVolumes(cluster)
 
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -60,26 +57,37 @@ func ApiServerPodTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.Kink
 					Name:  "apiserver",
 					Image: "openbce/kube-apiserver:v1.24.1",
 					Args: []string{
-						"",
+						"--advertise-address=0.0.0.0",
+						"--secure-port=6443",
+						fmt.Sprintf("--etcd-servers=http://%s-etcd-svc.%s:2380", cluster.Name, cluster.Namespace),
+						fmt.Sprintf("--service-cluster-ip-range=%s", cluster.Spec.ClusterNetwork.Services.CIDRBlocks[0]),
+
+						"--allow-privileged=true",
+						"--authorization-mode=Node,RBAC",
+						"--enable-admission-plugins=NodeRestriction",
+						"--enable-bootstrap-token-auth=true",
+						"--kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname",
+						"--requestheader-allowed-names=front-proxy-client",
+						"--requestheader-extra-headers-prefix=X-Remote-Extra-",
+						"--requestheader-group-headers=X-Remote-Group",
+						"--requestheader-username-headers=X-Remote-User",
+
+						"--client-ca-file=/etc/kubernetes/pki/root/ca.crt",
+						"--requestheader-client-ca-file=/etc/kubernetes/pki/root/ca.crt",
+						"--proxy-client-cert-file=/etc/kubernetes/pki/proxy/tls.crt",
+						"--proxy-client-key-file=/etc/kubernetes/pki/proxy/tls.key",
+						"--kubelet-client-certificate=/etc/kubernetes/pki/ca/tls.crt",
+						"--kubelet-client-key=/etc/kubernetes/pki/ca/tls.key",
+						"--service-account-issuer=https://kubernetes.default.svc.cluster.local",
+						"--service-account-key-file=/etc/kubernetes/pki/sa/tls.crt",
+						"--service-account-signing-key-file=/etc/kubernetes/pki/sa/tls.key",
+						"--tls-cert-file=/etc/kubernetes/pki/ca/tls.crt",
+						"--tls-private-key-file=/etc/kubernetes/pki/ca/tls.key",
 					},
-					VolumeMounts: []v1.VolumeMount{
-						{
-							Name:      caName,
-							MountPath: secret.DefaultCertificatesDir,
-						},
-					},
+					VolumeMounts: mounts,
 				},
 			},
-			Volumes: []v1.Volume{
-				{
-					Name: caName,
-					VolumeSource: v1.VolumeSource{
-						Secret: &v1.SecretVolumeSource{
-							SecretName: caName,
-						},
-					},
-				},
-			},
+			Volumes: volumes,
 		},
 	}
 }

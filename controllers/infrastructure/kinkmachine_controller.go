@@ -19,7 +19,6 @@ package infrastructure
 import (
 	"context"
 	"fmt"
-	"openbce.io/kink/controllers/infrastructure/templates"
 
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -33,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	infrav1beta1 "openbce.io/kink/apis/infrastructure/v1beta1"
-	kinkutil "openbce.io/kink/controllers/util"
+	"openbce.io/kink/controllers/infrastructure/templates"
 )
 
 // KinkMachineReconciler reconciles a KinkMachine object
@@ -110,7 +109,7 @@ func (r *KinkMachineReconciler) lookupOrSetupPods(ctx context.Context, cluster *
 			continue
 		}
 
-		podType, err := kinkutil.GetControlPlaneRole(&pod.ObjectMeta)
+		podType, err := getControlPlaneRole(&pod.ObjectMeta)
 		if err != nil {
 			continue
 		}
@@ -163,7 +162,7 @@ func (r *KinkMachineReconciler) lookupOrSetupServices(ctx context.Context, clust
 			continue
 		}
 
-		svcRole, err := kinkutil.GetControlPlaneRole(&svc.ObjectMeta)
+		svcRole, err := getControlPlaneRole(&svc.ObjectMeta)
 		if err != nil {
 			continue
 		}

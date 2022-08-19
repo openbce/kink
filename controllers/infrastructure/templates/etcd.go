@@ -17,22 +17,19 @@ limitations under the License.
 package templates
 
 import (
-	"fmt"
-	"k8s.io/apimachinery/pkg/util/intstr"
-
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/utils/pointer"
-	"sigs.k8s.io/cluster-api/util/secret"
-
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
 	infrav1beta1 "openbce.io/kink/apis/infrastructure/v1beta1"
 )
 
 const (
-	EtcdDefaultPort = 2379
+	EtcdDefaultSecurePort = 2379
+	EtcdDefaultPort       = 2380
 )
 
 func EtcdServiceTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.KinkMachine) *v1.Service {
@@ -65,8 +62,11 @@ func EtcdServiceTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.KinkM
 					},
 				},
 			},
-			Selector: nil,
-			Type:     v1.ServiceTypeClusterIP,
+			Selector: map[string]string{
+				clusterv1.ClusterLabelName:             cluster.Name,
+				infrav1beta1.ControlPlaneRoleLabelName: string(infrav1beta1.ETCD),
+			},
+			Type: v1.ServiceTypeClusterIP,
 		},
 	}
 }
@@ -81,7 +81,7 @@ func EtcdPodTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.KinkMachi
 		BlockOwnerDeletion: pointer.BoolPtr(true),
 	}
 
-	caName := fmt.Sprintf("%s-%s", cluster.Name, secret.ClusterCA)
+	volumes, mounts := getSecretVolumes(cluster)
 
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -98,26 +98,12 @@ func EtcdPodTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.KinkMachi
 			HostNetwork:   true,
 			Containers: []v1.Container{
 				{
-					Name:  "etcd",
-					Image: "openbce/etcd:3.5.3-0",
-					VolumeMounts: []v1.VolumeMount{
-						{
-							Name:      caName,
-							MountPath: secret.DefaultCertificatesDir,
-						},
-					},
+					Name:         "etcd",
+					Image:        "openbce/etcd:3.5.3-0",
+					VolumeMounts: mounts,
 				},
 			},
-			Volumes: []v1.Volume{
-				{
-					Name: caName,
-					VolumeSource: v1.VolumeSource{
-						Secret: &v1.SecretVolumeSource{
-							SecretName: caName,
-						},
-					},
-				},
-			},
+			Volumes: volumes,
 		},
 	}
 }
