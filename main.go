@@ -36,6 +36,7 @@ import (
 	controlplanev1alpha1 "openbce.io/kink/apis/controlplane/v1alpha1"
 	controlplanev1beta1 "openbce.io/kink/apis/controlplane/v1beta1"
 	infrastructurev1alpha1 "openbce.io/kink/apis/infrastructure/v1alpha1"
+	infrastructurev1beta1 "openbce.io/kink/apis/infrastructure/v1beta1"
 	controlplanecontrollers "openbce.io/kink/controllers/controlplane"
 	infrastructurecontrollers "openbce.io/kink/controllers/infrastructure"
 	//+kubebuilder:scaffold:imports
@@ -54,6 +55,7 @@ func init() {
 	utilruntime.Must(controlplanev1alpha1.AddToScheme(scheme))
 	utilruntime.Must(infrastructurev1alpha1.AddToScheme(scheme))
 	utilruntime.Must(controlplanev1beta1.AddToScheme(scheme))
+	utilruntime.Must(infrastructurev1beta1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 

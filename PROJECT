@@ -48,4 +48,28 @@ resources:
   kind: KinkControlPlane
   path: openbce.io/kink/apis/controlplane/v1beta1
   version: v1beta1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: cluster.x-k8s.io
+  group: infrastructure
+  kind: KinkMachine
+  path: openbce.io/kink/apis/infrastructure/v1beta1
+  version: v1beta1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: cluster.x-k8s.io
+  group: infrastructure
+  kind: KinkCluster
+  path: openbce.io/kink/apis/infrastructure/v1beta1
+  version: v1beta1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: cluster.x-k8s.io
+  group: infrastructure
+  kind: KinkMachineTemplate
+  path: openbce.io/kink/apis/infrastructure/v1beta1
+  version: v1beta1
 version: "3"

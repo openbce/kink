@@ -97,6 +97,7 @@ type KinkControlPlane struct {
 }
 
 //+kubebuilder:object:root=true
+//+kubebuilder:storageversion
 
 // KinkControlPlaneList contains a list of KinkControlPlane
 type KinkControlPlaneList struct {
