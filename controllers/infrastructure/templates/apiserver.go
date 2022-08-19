@@ -57,7 +57,8 @@ func ApiServerPodTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.Kink
 			HostNetwork:   true,
 			Containers: []v1.Container{
 				{
-					Image: "openbce/apiserver:v1.24.1",
+					Name:  "apiserver",
+					Image: "openbce/kube-apiserver:v1.24.1",
 					Args: []string{
 						"",
 					},

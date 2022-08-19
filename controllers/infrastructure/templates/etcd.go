@@ -98,6 +98,7 @@ func EtcdPodTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.KinkMachi
 			HostNetwork:   true,
 			Containers: []v1.Container{
 				{
+					Name:  "etcd",
 					Image: "openbce/etcd:3.5.3-0",
 					VolumeMounts: []v1.VolumeMount{
 						{

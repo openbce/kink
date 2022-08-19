@@ -90,6 +90,8 @@ func (r *KinkMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *KinkMachineReconciler) lookupOrSetupPods(ctx context.Context, cluster *clusterv1.Cluster, machine *infrav1beta1.KinkMachine) error {
+	logger := log.FromContext(ctx)
+
 	podList := &v1.PodList{}
 	if err := r.List(ctx, podList,
 		client.InNamespace(cluster.Namespace),
@@ -134,7 +136,8 @@ func (r *KinkMachineReconciler) lookupOrSetupPods(ctx context.Context, cluster *
 		}
 
 		if err := r.Create(ctx, pt); err != nil {
-			continue
+			logger.Error(err, "Failed to create pod for machine", "pod", pt)
+			return err
 		}
 	}
 
