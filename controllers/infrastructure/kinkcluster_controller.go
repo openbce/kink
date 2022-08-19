@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	infrav1alpha1 "openbce.io/kink/apis/infrastructure/v1alpha1"
+	infrav1beta1 "openbce.io/kink/apis/infrastructure/v1beta1"
 )
 
 // KinkClusterReconciler reconciles a KinkCluster object
@@ -43,7 +43,7 @@ type KinkClusterReconciler struct {
 func (r *KinkClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	cluster := &infrav1alpha1.KinkCluster{}
+	cluster := &infrav1beta1.KinkCluster{}
 	if err := r.Client.Get(ctx, req.NamespacedName, cluster); err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -64,6 +64,6 @@ func (r *KinkClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 // SetupWithManager sets up the controller with the Manager.
 func (r *KinkClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&infrav1alpha1.KinkCluster{}).
+		For(&infrav1beta1.KinkCluster{}).
 		Complete(r)
 }

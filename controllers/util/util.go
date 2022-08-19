@@ -21,18 +21,18 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"openbce.io/kink/apis/infrastructure/v1alpha1"
+	"openbce.io/kink/apis/infrastructure/v1beta1"
 )
 
-func GetControlPlaneRole(pod *metav1.ObjectMeta) (v1alpha1.ControlPlaneRole, error) {
+func GetControlPlaneRole(pod *metav1.ObjectMeta) (v1beta1.ControlPlaneRole, error) {
 	if pod == nil || pod.Labels == nil {
-		return v1alpha1.Unkonwn, fmt.Errorf("pod is nil")
+		return v1beta1.Unkonwn, fmt.Errorf("pod is nil")
 	}
 
-	podType, found := pod.Labels[v1alpha1.ControlPlaneRoleLabelName]
+	podType, found := pod.Labels[v1beta1.ControlPlaneRoleLabelName]
 	if !found {
-		return v1alpha1.Unkonwn, fmt.Errorf("pod is nil")
+		return v1beta1.Unkonwn, fmt.Errorf("pod is nil")
 	}
 
-	return v1alpha1.ControlPlaneRole(podType), nil
+	return v1beta1.ControlPlaneRole(podType), nil
 }

@@ -28,16 +28,16 @@ import (
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
-	infrav1alpha1 "openbce.io/kink/apis/infrastructure/v1alpha1"
+	infrav1beta1 "openbce.io/kink/apis/infrastructure/v1beta1"
 )
 
 const (
 	EtcdDefaultPort = 2379
 )
 
-func EtcdServiceTemplate(cluster *clusterv1.Cluster, machine *infrav1alpha1.KinkMachine) *v1.Service {
+func EtcdServiceTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.KinkMachine) *v1.Service {
 	owner := metav1.OwnerReference{
-		APIVersion:         infrav1alpha1.GroupVersion.String(),
+		APIVersion:         infrav1beta1.GroupVersion.String(),
 		Kind:               "KinkMachine",
 		Name:               machine.Name,
 		UID:                machine.UID,
@@ -50,8 +50,8 @@ func EtcdServiceTemplate(cluster *clusterv1.Cluster, machine *infrav1alpha1.Kink
 			Name:      cluster.Name + "-etcd-svc",
 			Namespace: cluster.Namespace,
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName:              cluster.Name,
-				infrav1alpha1.ControlPlaneRoleLabelName: string(infrav1alpha1.ETCD),
+				clusterv1.ClusterLabelName:             cluster.Name,
+				infrav1beta1.ControlPlaneRoleLabelName: string(infrav1beta1.ETCD),
 			},
 			OwnerReferences: []metav1.OwnerReference{owner},
 		},
@@ -71,9 +71,9 @@ func EtcdServiceTemplate(cluster *clusterv1.Cluster, machine *infrav1alpha1.Kink
 	}
 }
 
-func EtcdPodTemplate(cluster *clusterv1.Cluster, machine *infrav1alpha1.KinkMachine) *v1.Pod {
+func EtcdPodTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.KinkMachine) *v1.Pod {
 	owner := metav1.OwnerReference{
-		APIVersion:         infrav1alpha1.GroupVersion.String(),
+		APIVersion:         infrav1beta1.GroupVersion.String(),
 		Kind:               "KinkMachine",
 		Name:               machine.Name,
 		UID:                machine.UID,
@@ -88,8 +88,8 @@ func EtcdPodTemplate(cluster *clusterv1.Cluster, machine *infrav1alpha1.KinkMach
 			Name:      names.SimpleNameGenerator.GenerateName(cluster.Name + "-etcd-"),
 			Namespace: cluster.Namespace,
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName:              cluster.Name,
-				infrav1alpha1.ControlPlaneRoleLabelName: string(infrav1alpha1.ETCD),
+				clusterv1.ClusterLabelName:             cluster.Name,
+				infrav1beta1.ControlPlaneRoleLabelName: string(infrav1beta1.ETCD),
 			},
 			OwnerReferences: []metav1.OwnerReference{owner},
 		},

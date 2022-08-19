@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	infrav1alpha1 "openbce.io/kink/apis/infrastructure/v1alpha1"
+	infrav1beta1 "openbce.io/kink/apis/infrastructure/v1beta1"
 	kinkutil "openbce.io/kink/controllers/util"
 )
 
@@ -48,17 +48,10 @@ type KinkMachineReconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the KinkMachine object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.12.2/pkg/reconcile
 func (r *KinkMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	machine := &infrav1alpha1.KinkMachine{}
+	machine := &infrav1beta1.KinkMachine{}
 	if err := r.Client.Get(ctx, req.NamespacedName, machine); err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -92,11 +85,11 @@ func (r *KinkMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 // SetupWithManager sets up the controller with the Manager.
 func (r *KinkMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&infrav1alpha1.KinkMachine{}).
+		For(&infrav1beta1.KinkMachine{}).
 		Complete(r)
 }
 
-func (r *KinkMachineReconciler) lookupOrSetupPods(ctx context.Context, cluster *clusterv1.Cluster, machine *infrav1alpha1.KinkMachine) error {
+func (r *KinkMachineReconciler) lookupOrSetupPods(ctx context.Context, cluster *clusterv1.Cluster, machine *infrav1beta1.KinkMachine) error {
 	podList := &v1.PodList{}
 	if err := r.List(ctx, podList,
 		client.InNamespace(cluster.Namespace),
@@ -108,7 +101,7 @@ func (r *KinkMachineReconciler) lookupOrSetupPods(ctx context.Context, cluster *
 
 	machine.Status.Pods = nil
 
-	podMap := map[infrav1alpha1.ControlPlaneRole]*v1.Pod{}
+	podMap := map[infrav1beta1.ControlPlaneRole]*v1.Pod{}
 
 	for _, pod := range podList.Items {
 		if !util.IsOwnedByObject(&pod, machine) {
@@ -148,7 +141,7 @@ func (r *KinkMachineReconciler) lookupOrSetupPods(ctx context.Context, cluster *
 	return nil
 }
 
-func (r *KinkMachineReconciler) lookupOrSetupServices(ctx context.Context, cluster *clusterv1.Cluster, machine *infrav1alpha1.KinkMachine) error {
+func (r *KinkMachineReconciler) lookupOrSetupServices(ctx context.Context, cluster *clusterv1.Cluster, machine *infrav1beta1.KinkMachine) error {
 	svcList := &v1.ServiceList{}
 	if err := r.List(ctx, svcList,
 		client.InNamespace(cluster.Namespace),
@@ -160,7 +153,7 @@ func (r *KinkMachineReconciler) lookupOrSetupServices(ctx context.Context, clust
 
 	machine.Status.Pods = nil
 
-	svcMap := map[infrav1alpha1.ControlPlaneRole]*v1.Service{}
+	svcMap := map[infrav1beta1.ControlPlaneRole]*v1.Service{}
 
 	for _, svc := range svcList.Items {
 		if !util.IsOwnedByObject(&svc, machine) {
@@ -190,24 +183,24 @@ func (r *KinkMachineReconciler) lookupOrSetupServices(ctx context.Context, clust
 	return nil
 }
 
-func (r *KinkMachineReconciler) getControlPlanePodTemplates(cluster *clusterv1.Cluster, machine *infrav1alpha1.KinkMachine) map[infrav1alpha1.ControlPlaneRole]*v1.Pod {
-	res := map[infrav1alpha1.ControlPlaneRole]*v1.Pod{}
+func (r *KinkMachineReconciler) getControlPlanePodTemplates(cluster *clusterv1.Cluster, machine *infrav1beta1.KinkMachine) map[infrav1beta1.ControlPlaneRole]*v1.Pod {
+	res := map[infrav1beta1.ControlPlaneRole]*v1.Pod{}
 
-	res[infrav1alpha1.ETCD] = templates.EtcdPodTemplate(cluster, machine)
-	res[infrav1alpha1.ApiServer] = templates.ApiServerPodTemplate(cluster, machine)
-
-	return res
-}
-
-func (r *KinkMachineReconciler) getControlPlaneServiceTemplates(cluster *clusterv1.Cluster, machine *infrav1alpha1.KinkMachine) map[infrav1alpha1.ControlPlaneRole]*v1.Service {
-	res := map[infrav1alpha1.ControlPlaneRole]*v1.Service{}
-
-	res[infrav1alpha1.ETCD] = templates.EtcdServiceTemplate(cluster, machine)
+	res[infrav1beta1.ETCD] = templates.EtcdPodTemplate(cluster, machine)
+	res[infrav1beta1.ApiServer] = templates.ApiServerPodTemplate(cluster, machine)
 
 	return res
 }
 
-func (r *KinkMachineReconciler) updateMachineStatus(ctx context.Context, cluster *clusterv1.Cluster, machine *infrav1alpha1.KinkMachine) error {
+func (r *KinkMachineReconciler) getControlPlaneServiceTemplates(cluster *clusterv1.Cluster, machine *infrav1beta1.KinkMachine) map[infrav1beta1.ControlPlaneRole]*v1.Service {
+	res := map[infrav1beta1.ControlPlaneRole]*v1.Service{}
+
+	res[infrav1beta1.ETCD] = templates.EtcdServiceTemplate(cluster, machine)
+
+	return res
+}
+
+func (r *KinkMachineReconciler) updateMachineStatus(ctx context.Context, cluster *clusterv1.Cluster, machine *infrav1beta1.KinkMachine) error {
 	podList := &v1.PodList{}
 	if err := r.List(ctx, podList,
 		client.InNamespace(cluster.Namespace),
@@ -243,7 +236,7 @@ func (r *KinkMachineReconciler) updateMachineStatus(ctx context.Context, cluster
 	return nil
 }
 
-func (r *KinkMachineReconciler) lookupOrSetupControlPlane(ctx context.Context, cluster *clusterv1.Cluster, machine *infrav1alpha1.KinkMachine) error {
+func (r *KinkMachineReconciler) lookupOrSetupControlPlane(ctx context.Context, cluster *clusterv1.Cluster, machine *infrav1beta1.KinkMachine) error {
 	if err := r.lookupOrSetupPods(ctx, cluster, machine); err != nil {
 		return err
 	}

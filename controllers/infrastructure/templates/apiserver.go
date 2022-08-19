@@ -27,12 +27,12 @@ import (
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
-	infrav1alpha1 "openbce.io/kink/apis/infrastructure/v1alpha1"
+	infrav1beta1 "openbce.io/kink/apis/infrastructure/v1beta1"
 )
 
-func ApiServerPodTemplate(cluster *clusterv1.Cluster, machine *infrav1alpha1.KinkMachine) *v1.Pod {
+func ApiServerPodTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.KinkMachine) *v1.Pod {
 	owner := metav1.OwnerReference{
-		APIVersion:         infrav1alpha1.GroupVersion.String(),
+		APIVersion:         infrav1beta1.GroupVersion.String(),
 		Kind:               "KinkMachine",
 		Name:               machine.Name,
 		UID:                machine.UID,
@@ -47,8 +47,8 @@ func ApiServerPodTemplate(cluster *clusterv1.Cluster, machine *infrav1alpha1.Kin
 			Name:      names.SimpleNameGenerator.GenerateName(cluster.Name + "-apiserver-"),
 			Namespace: cluster.Namespace,
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName:              cluster.Name,
-				infrav1alpha1.ControlPlaneRoleLabelName: string(infrav1alpha1.ApiServer),
+				clusterv1.ClusterLabelName:             cluster.Name,
+				infrav1beta1.ControlPlaneRoleLabelName: string(infrav1beta1.ApiServer),
 			},
 			OwnerReferences: []metav1.OwnerReference{owner},
 		},
