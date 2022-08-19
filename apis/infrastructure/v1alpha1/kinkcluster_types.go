@@ -31,9 +31,9 @@ type KinkClusterSpec struct {
 
 // KinkClusterStatus defines the observed state of KinkCluster
 type KinkClusterStatus struct {
-	// LastUpdated identifies when this status was last observed.
+	// Ready denotes that the cluster (infrastructure) is ready.
 	// +optional
-	LastUpdated *metav1.Time `json:"lastUpdated,omitempty"`
+	Ready bool `json:"ready"`
 
 	// FailureReason indicates that there is a fatal problem reconciling the
 	// state, and will be set to a token value suitable for
@@ -45,10 +45,6 @@ type KinkClusterStatus struct {
 	// state, and will be set to a descriptive error message.
 	// +optional
 	FailureMessage *string `json:"failureMessage,omitempty"`
-
-	// Ready denotes that the cluster (infrastructure) is ready.
-	// +optional
-	Ready bool `json:"ready"`
 
 	// Conditions defines current service state of the cluster.
 	// +optional
