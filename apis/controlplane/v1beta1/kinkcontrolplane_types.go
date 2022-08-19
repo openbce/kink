@@ -24,11 +24,8 @@ import (
 
 // KinkControlPlaneSpec defines the desired state of KinkControlPlane
 type KinkControlPlaneSpec struct {
-	// Kubeconf is the credential used to access tenant kubernetes master.
-	Kubeconf string `json:"kubeconf,omitempty"`
-
-	// CredentialsName is the credential for worker to join tenant kubernetes master.
-	CredentialsName string `json:"credentialsName,omitempty"`
+	// Replicas is the replicas of control plane.
+	Replicas *int32 `json:"replicas,omitempty"`
 
 	// ClusterName is the name of cluster.
 	ClusterName string `json:"clusterName,omitempty"`
@@ -55,6 +52,10 @@ type KinkControlPlaneStatus struct {
 	// that still have not been created.
 	// +optional
 	UnavailableReplicas int32 `json:"unavailableReplicas,omitempty"`
+
+	// Total number of updated control plane machines.
+	// +optional
+	UpdatedReplicas int32 `json:"updatedReplicas,omitempty"`
 
 	// Initialized denotes whether or not the control plane has the
 	// uploaded kubeconf configmap.

@@ -17,25 +17,55 @@ limitations under the License.
 package v1alpha1
 
 import (
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+type ControlPlaneRole string
+
+const (
+	ControlPlaneRoleLabelName = "kink.openbce.io/role"
+
+	ApiServer ControlPlaneRole = "apiserver"
+	ETCD      ControlPlaneRole = "etcd"
+	Unkonwn   ControlPlaneRole = "unknown"
+)
 
 // KinkMachineSpec defines the desired state of KinkMachine
 type KinkMachineSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of KinkMachine. Edit kinkmachine_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// Version represents the minimum Kubernetes version for the control plane machines
+	// in the cluster.
+	// +optional
+	Version *string `json:"version,omitempty"`
 }
 
 // KinkMachineStatus defines the observed state of KinkMachine
 type KinkMachineStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Pods includes the control plane pods that managed by the KinkControlPlane.
+	// +optional
+	Pods []v1.ObjectReference `json:"pods,omitempty"`
+
+	// Ready denotes that the KinkControlPlane API Server is ready to
+	// receive requests.
+	// +optional
+	Ready bool `json:"ready,omitempty"`
+
+	// FailureReason indicates that there is a terminal problem reconciling the
+	// state, and will be set to a token value suitable for
+	// programmatic interpretation.
+	// +optional
+	FailureReason *string `json:"failureReason,omitempty"`
+
+	// ErrorMessage indicates that there is a terminal problem reconciling the
+	// state, and will be set to a descriptive error message.
+	// +optional
+	FailureMessage *string `json:"failureMessage,omitempty"`
+
+	// Conditions defines current service state of the KinkControlPlane.
+	// +optional
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true
