@@ -23,6 +23,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -39,7 +40,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/secret"
 
 	ctrlv1beta1 "openbce.io/kink/apis/controlplane/v1beta1"
-	infrav1alpha1 "openbce.io/kink/apis/infrastructure/v1alpha1"
+	infrav1beta1 "openbce.io/kink/apis/infrastructure/v1beta1"
 )
 
 // KinkControlPlaneReconciler reconciles a KinkControlPlane object
@@ -109,10 +110,10 @@ func (r *KinkControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	return ctrl.Result{}, nil
 }
 
-func (r *KinkControlPlaneReconciler) lookupOrCreateMachines(ctx context.Context, cluster *clusterv1.Cluster, kcp *ctrlv1beta1.KinkControlPlane) (*infrav1alpha1.KinkMachineList, error) {
+func (r *KinkControlPlaneReconciler) lookupOrCreateMachines(ctx context.Context, cluster *clusterv1.Cluster, kcp *ctrlv1beta1.KinkControlPlane) (*infrav1beta1.KinkMachineList, error) {
 	logger := log.FromContext(ctx)
 
-	kms := &infrav1alpha1.KinkMachineList{}
+	kms := &infrav1beta1.KinkMachineList{}
 	if err := r.Client.List(ctx, kms,
 		client.InNamespace(cluster.Namespace),
 		client.MatchingLabels{
@@ -137,7 +138,7 @@ func (r *KinkControlPlaneReconciler) lookupOrCreateMachines(ctx context.Context,
 	}
 
 	for i := len(kms.Items); int32(i) < replicas; i++ {
-		m := infrav1alpha1.KinkMachine{
+		m := infrav1beta1.KinkMachine{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      names.SimpleNameGenerator.GenerateName(cluster.Name + "-"),
 				Namespace: cluster.Namespace,
@@ -147,7 +148,7 @@ func (r *KinkControlPlaneReconciler) lookupOrCreateMachines(ctx context.Context,
 				},
 				OwnerReferences: []metav1.OwnerReference{owner},
 			},
-			Spec: infrav1alpha1.KinkMachineSpec{
+			Spec: infrav1beta1.KinkMachineSpec{
 				Version: kcp.Spec.Version,
 			},
 		}
@@ -166,7 +167,7 @@ func (r *KinkControlPlaneReconciler) lookupOrCreateMachines(ctx context.Context,
 
 	// if KinkMachineList does not match replica, refresh it from apiserver.
 	if len(kms.Items) != int(replicas) {
-		kms = &infrav1alpha1.KinkMachineList{}
+		kms = &infrav1beta1.KinkMachineList{}
 		if err := r.Client.List(ctx, kms,
 			client.InNamespace(cluster.Namespace),
 			client.MatchingLabels{
@@ -180,7 +181,7 @@ func (r *KinkControlPlaneReconciler) lookupOrCreateMachines(ctx context.Context,
 	return kms, nil
 }
 
-func (r *KinkControlPlaneReconciler) updateKinkCtlPlaneStatus(ctx context.Context, kcp *ctrlv1beta1.KinkControlPlane, kms *infrav1alpha1.KinkMachineList) error {
+func (r *KinkControlPlaneReconciler) updateKinkCtlPlaneStatus(ctx context.Context, kcp *ctrlv1beta1.KinkControlPlane, kms *infrav1beta1.KinkMachineList) error {
 	var readyReplicas, unavailableReplicas int32
 	for _, m := range kms.Items {
 		if m.Status.Ready {
@@ -220,6 +221,9 @@ func (r *KinkControlPlaneReconciler) updateKinkCtlPlaneStatus(ctx context.Contex
 func (r *KinkControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&ctrlv1beta1.KinkControlPlane{}).
+		Owns(&infrav1beta1.KinkMachine{}).
+		Owns(&v1.ConfigMap{}).
+		Owns(&v1.Secret{}).
 		Complete(r)
 }
 

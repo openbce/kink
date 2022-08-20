@@ -85,6 +85,7 @@ func (r *KinkMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 func (r *KinkMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&infrav1beta1.KinkMachine{}).
+		Owns(&v1.Pod{}).
 		Complete(r)
 }
 
