@@ -17,6 +17,8 @@ limitations under the License.
 package templates
 
 import (
+	"fmt"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -28,8 +30,7 @@ import (
 )
 
 const (
-	EtcdDefaultSecurePort = 2379
-	EtcdDefaultPort       = 2380
+	EtcdDefaultPort = 2379
 )
 
 func EtcdServiceTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.KinkMachine) *v1.Service {
@@ -83,9 +84,11 @@ func EtcdPodTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.KinkMachi
 
 	volumes, mounts := getSecretVolumes(cluster)
 
+	podName := names.SimpleNameGenerator.GenerateName(cluster.Name + "-etcd-")
+
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      names.SimpleNameGenerator.GenerateName(cluster.Name + "-etcd-"),
+			Name:      podName,
 			Namespace: cluster.Namespace,
 			Labels: map[string]string{
 				clusterv1.ClusterLabelName:             cluster.Name,
@@ -98,8 +101,24 @@ func EtcdPodTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.KinkMachi
 			HostNetwork:   true,
 			Containers: []v1.Container{
 				{
-					Name:         "etcd",
-					Image:        "openbce/etcd:3.5.3-0",
+					Name:  "etcd",
+					Image: "openbce/etcd:3.5.3-0",
+					Env: []v1.EnvVar{
+						{
+							Name: "host_ip",
+							ValueFrom: &v1.EnvVarSource{
+								FieldRef: &v1.ObjectFieldSelector{
+									FieldPath: "status.podIP",
+								},
+							},
+						},
+					},
+					Command: []string{
+						"etcd",
+						//						fmt.Sprintf("--advertise-client-urls=http://${host_ip}:%d", EtcdDefaultPort),
+						fmt.Sprintf("--advertise-client-urls=http://10.209.226.184:%d", EtcdDefaultPort),
+						fmt.Sprintf("--listen-client-urls=http://10.209.226.184:%d,http://127.0.0.1:%d", EtcdDefaultPort, EtcdDefaultPort),
+					},
 					VolumeMounts: mounts,
 				},
 			},

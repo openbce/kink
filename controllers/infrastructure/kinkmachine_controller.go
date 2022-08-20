@@ -130,7 +130,6 @@ func (r *KinkMachineReconciler) lookupOrSetupPods(ctx context.Context, cluster *
 			}
 
 			machine.Status.Pods = append(machine.Status.Pods, podRef)
-
 			continue
 		}
 
@@ -231,7 +230,7 @@ func (r *KinkMachineReconciler) updateMachineStatus(ctx context.Context, cluster
 		}
 	}
 
-	if err := r.Update(ctx, machine); err != nil {
+	if err := r.Status().Update(ctx, machine); err != nil {
 		return err
 	}
 
