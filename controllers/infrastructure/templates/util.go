@@ -25,6 +25,15 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
+var hostIPEnvVar = v1.EnvVar{
+	Name: "host_ip",
+	ValueFrom: &v1.EnvVarSource{
+		FieldRef: &v1.ObjectFieldSelector{
+			FieldPath: "status.podIP",
+		},
+	},
+}
+
 func getSecretVolumes(cluster *clusterv1.Cluster) ([]v1.Volume, []v1.VolumeMount) {
 	var volumes []v1.Volume
 	var mounts []v1.VolumeMount

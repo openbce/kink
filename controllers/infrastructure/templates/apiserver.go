@@ -55,11 +55,13 @@ func ApiServerPodTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.Kink
 			DNSPolicy:     v1.DNSClusterFirstWithHostNet,
 			Containers: []v1.Container{
 				{
-					Name:  "apiserver",
-					Image: "openbce/kube-apiserver:v1.24.1",
-					Command: []string{
+					Name:    "apiserver",
+					Image:   "openbce/kube-apiserver:v1.24.1",
+					Env:     []v1.EnvVar{hostIPEnvVar},
+					Command: []string{"/bin/sh", "-c"},
+					Args: []string{
 						"kube-apiserver",
-						"--advertise-address=0.0.0.0",
+						"--advertise-address=${host_ip}",
 						"--secure-port=6443",
 						fmt.Sprintf("--etcd-servers=http://%s-etcd-svc.%s:%d", cluster.Name, cluster.Namespace, EtcdDefaultPort),
 						fmt.Sprintf("--service-cluster-ip-range=%s", cluster.Spec.ClusterNetwork.Services.CIDRBlocks[0]),
