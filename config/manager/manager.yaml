@@ -38,7 +38,7 @@ spec:
         - /manager
         args:
         - --leader-elect
-        image: controller:latest
+        image: openbce/kink:v0.1.0
         name: manager
         securityContext:
           allowPrivilegeEscalation: false
