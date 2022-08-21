@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -30,9 +31,13 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/utils/pointer"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
@@ -52,6 +57,10 @@ type KinkControlPlaneReconciler struct {
 //+kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=kinkcontrolplanes,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=kinkcontrolplanes/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=controlplane.cluster.x-k8s.io,resources=kinkcontrolplanes/finalizers,verbs=update
+//+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters,verbs=get;list;watch
+//+kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters/status,verbs=get;list;watch
+//+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -75,6 +84,11 @@ func (r *KinkControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err := r.Get(ctx, clusterName, cluster); err != nil {
 		logger.Error(err, "Failed to get cluster for KinkControlPlane", "KinkControlPlane", kcp)
 		return ctrl.Result{Requeue: true}, nil
+	}
+
+	if !cluster.Status.InfrastructureReady {
+		logger.Info("Waiting for cluster infrastructure ready.", "cluster", cluster)
+		return ctrl.Result{}, nil
 	}
 
 	// Step 2: generate CA & kubeconf for control plane & data plane
@@ -214,10 +228,34 @@ func (r *KinkControlPlaneReconciler) updateKinkCtlPlaneStatus(ctx context.Contex
 func (r *KinkControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&ctrlv1beta1.KinkControlPlane{}).
+		Watches(
+			&source.Kind{Type: &clusterv1.Cluster{}},
+			handler.EnqueueRequestsFromMapFunc(r.ClusterToKinkCtrlPlane)).
 		Owns(&infrav1beta1.KinkMachine{}).
 		Owns(&v1.ConfigMap{}).
 		Owns(&v1.Secret{}).
+		Owns(&v1.Service{}).
 		Complete(r)
+}
+
+func (r *KinkControlPlaneReconciler) ClusterToKinkCtrlPlane(o client.Object) []reconcile.Request {
+	c, ok := o.(*clusterv1.Cluster)
+	if !ok {
+		panic(fmt.Sprintf("Expected a Cluster but got a %T", o))
+	}
+
+	controlPlaneRef := c.Spec.ControlPlaneRef
+	if controlPlaneRef != nil && controlPlaneRef.Kind == "KinkControlPlane" {
+		return []ctrl.Request{
+			{
+				NamespacedName: client.ObjectKey{
+					Namespace: controlPlaneRef.Namespace,
+					Name:      controlPlaneRef.Name,
+				},
+			},
+		}
+	}
+	return nil
 }
 
 func persistKubeConf(data []byte) (*string, error) {
