@@ -18,6 +18,7 @@ package templates
 
 import (
 	"fmt"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -105,10 +106,11 @@ func EtcdPodTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.KinkMachi
 					Image:   "openbce/etcd:3.5.3-0",
 					Env:     []v1.EnvVar{hostIPEnvVar},
 					Command: []string{"/bin/sh", "-c"},
-					Args: []string{
+					Args: []string{strings.Join([]string{
 						"etcd",
 						fmt.Sprintf("--advertise-client-urls=http://${host_ip}:%d", EtcdDefaultPort),
-						fmt.Sprintf("--listen-client-urls=http://${host_ip}:%d,http://127.0.0.1:%d", EtcdDefaultPort, EtcdDefaultPort),
+						fmt.Sprintf("--listen-client-urls=http://${host_ip}:%d,http://127.0.0.1:%d", EtcdDefaultPort, EtcdDefaultPort)},
+						" "),
 					},
 					VolumeMounts: mounts,
 				},

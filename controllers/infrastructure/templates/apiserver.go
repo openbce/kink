@@ -18,6 +18,8 @@ package templates
 
 import (
 	"fmt"
+	"strings"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/storage/names"
@@ -59,7 +61,7 @@ func ApiServerPodTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.Kink
 					Image:   "openbce/kube-apiserver:v1.24.1",
 					Env:     []v1.EnvVar{hostIPEnvVar},
 					Command: []string{"/bin/sh", "-c"},
-					Args: []string{
+					Args: []string{strings.Join([]string{
 						"kube-apiserver",
 						"--advertise-address=${host_ip}",
 						"--secure-port=6443",
@@ -86,7 +88,8 @@ func ApiServerPodTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.Kink
 						"--service-account-key-file=/etc/kubernetes/pki/sa/tls.crt",
 						"--service-account-signing-key-file=/etc/kubernetes/pki/sa/tls.key",
 						"--tls-cert-file=/etc/kubernetes/pki/ca/tls.crt",
-						"--tls-private-key-file=/etc/kubernetes/pki/ca/tls.key",
+						"--tls-private-key-file=/etc/kubernetes/pki/ca/tls.key"},
+						" "),
 					},
 					VolumeMounts: mounts,
 				},
