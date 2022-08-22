@@ -8,9 +8,43 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - pods
   - configmaps
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - services
   verbs:
   - create
   - delete
@@ -23,6 +57,13 @@ rules:
   - cluster.x-k8s.io
   resources:
   - clusters
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
   - clusters/status
   verbs:
   - get

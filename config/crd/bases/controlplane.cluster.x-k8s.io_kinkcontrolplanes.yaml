@@ -217,6 +217,10 @@ spec:
                   - type
                   type: object
                 type: array
+              externalManagedControlPlane:
+                description: ExternalManagedControlPlane is a bool that is set to
+                  true as the Node objects do not exist in the cluster.
+                type: boolean
               failureMessage:
                 description: ErrorMessage indicates that there is a terminal problem
                   reconciling the state, and will be set to a descriptive error message.

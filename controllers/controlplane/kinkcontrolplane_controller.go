@@ -239,6 +239,9 @@ func (r *KinkControlPlaneReconciler) updateKinkCtlPlaneStatus(ctx context.Contex
 		kcp.Status.Ready = false
 	}
 
+	// Declare that Node objects do not exist in the cluster
+	kcp.Status.ExternalManagedControlPlane = true
+
 	if err := r.Status().Update(ctx, kcp); err != nil {
 		return err
 	}

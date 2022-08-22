@@ -36,6 +36,11 @@ type KinkControlPlaneSpec struct {
 
 // KinkControlPlaneStatus defines the observed state of KinkControlPlane
 type KinkControlPlaneStatus struct {
+	// ExternalManagedControlPlane is a bool that is set to true as the Node objects do not
+	// exist in the cluster.
+	// +optional
+	ExternalManagedControlPlane bool `json:"externalManagedControlPlane,omitempty"`
+
 	// Version represents the minimum Kubernetes version for the control plane machines
 	// in the cluster.
 	// +optional
