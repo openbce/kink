@@ -18,14 +18,13 @@ package infrastructure
 
 import (
 	"context"
-	"fmt"
 
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -224,11 +223,7 @@ func (r *KinkMachineReconciler) updateMachineStatus(ctx context.Context, cluster
 		}
 
 		if pod.Status.Phase != v1.PodRunning {
-			reason := fmt.Sprintf("Pod %s/%s is not running", pod.Namespace, pod.Name)
 			machine.Status.Ready = false
-			machine.Status.FailureMessage = &reason
-			machine.Status.FailureReason = &reason
-
 			break
 		}
 	}
