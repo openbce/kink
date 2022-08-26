@@ -21,12 +21,15 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 
+	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pkiutil"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
+	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	ctrlv1beta1 "openbce.io/kink/apis/controlplane/v1beta1"
@@ -87,14 +90,24 @@ func (c *CertificatesManager) LookupOrGenerateKubeconfig(kcp *ctrlv1beta1.KinkCo
 		Name:      cluster.Name,
 	}
 
-	endpoint := cluster.Spec.ControlPlaneEndpoint
+	kcName := types.NamespacedName{
+		Namespace: cluster.Namespace,
+		Name:      secret.Name(cluster.Name, secret.Kubeconfig),
+	}
 
-	ownerRef := metav1.NewControllerRef(kcp,
-		ctrlv1beta1.GroupVersion.WithKind("KinkControlPlane"))
+	kc := &v1.Secret{}
+	if err := c.r.Get(c.ctx, kcName, kc); err != nil {
+		if apierrors.IsNotFound(err) {
+			ownerRef := metav1.NewControllerRef(kcp,
+				ctrlv1beta1.GroupVersion.WithKind("KinkControlPlane"))
 
-	err := kubeconfig.CreateSecretWithOwner(c.ctx, c.r, clusterName, endpoint.String(), *ownerRef)
-	if err != nil {
-		return err
+			endpoint := cluster.Spec.ControlPlaneEndpoint
+			if err := kubeconfig.CreateSecretWithOwner(c.ctx, c.r, clusterName, endpoint.String(), *ownerRef); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
 	}
 
 	return nil

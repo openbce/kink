@@ -228,13 +228,13 @@ func (r *KinkControlPlaneReconciler) updateKinkCtlPlaneStatus(ctx context.Contex
 func (r *KinkControlPlaneReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&ctrlv1beta1.KinkControlPlane{}).
-		Watches(
-			&source.Kind{Type: &clusterv1.Cluster{}},
-			handler.EnqueueRequestsFromMapFunc(r.ClusterToKinkCtrlPlane)).
 		Owns(&infrav1beta1.KinkMachine{}).
 		Owns(&v1.ConfigMap{}).
 		Owns(&v1.Secret{}).
 		Owns(&v1.Service{}).
+		Watches(
+			&source.Kind{Type: &clusterv1.Cluster{}},
+			handler.EnqueueRequestsFromMapFunc(r.ClusterToKinkCtrlPlane)).
 		Complete(r)
 }
 

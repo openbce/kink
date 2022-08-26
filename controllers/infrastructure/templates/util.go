@@ -38,10 +38,13 @@ func getSecretVolumes(cluster *clusterv1.Cluster) ([]v1.Volume, []v1.VolumeMount
 	var volumes []v1.Volume
 	var mounts []v1.VolumeMount
 
-	certs := []secret.Purpose{
-		secret.ClusterCA,
-		secret.FrontProxyCA,
-		secret.ServiceAccount,
+	certs := []string{
+		"ca",
+		"apiserver",
+		"apiserver-kubelet-client",
+		"front-proxy-ca",
+		"front-proxy-client",
+		"sa",
 	}
 
 	// Add certs
@@ -64,26 +67,6 @@ func getSecretVolumes(cluster *clusterv1.Cluster) ([]v1.Volume, []v1.VolumeMount
 		}
 		mounts = append(mounts, mount)
 	}
-
-	// Add root ca config map
-	caPath, caName := "root", "kube-root-ca.crt"
-	volume := v1.Volume{
-		Name: caPath,
-		VolumeSource: v1.VolumeSource{
-			ConfigMap: &v1.ConfigMapVolumeSource{
-				LocalObjectReference: v1.LocalObjectReference{
-					Name: caName,
-				},
-			},
-		},
-	}
-	volumes = append(volumes, volume)
-
-	mount := v1.VolumeMount{
-		Name:      caPath,
-		MountPath: secret.DefaultCertificatesDir + "/" + caPath,
-	}
-	mounts = append(mounts, mount)
 
 	return volumes, mounts
 }
