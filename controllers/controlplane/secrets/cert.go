@@ -268,7 +268,7 @@ func GetCerts() Certificates {
 // KinkCertRootCA is the definition of the Kubernetes Root CA for the API Server and kubelet.
 func KinkCertRootCA() *KinkCert {
 	return &KinkCert{
-		Name:     "ca",
+		Name:     "root",
 		LongName: "self-signed Kubernetes CA to provision identities for other Kubernetes components",
 		BaseName: kubeadmconstants.CACertAndKeyBaseName,
 		config: pkiutil.CertConfig{
@@ -282,10 +282,10 @@ func KinkCertRootCA() *KinkCert {
 // KinkCertAPIServer is the definition of the cert used to serve the Kubernetes API.
 func KinkCertAPIServer() *KinkCert {
 	return &KinkCert{
-		Name:     "apiserver",
+		Name:     "ca",
 		LongName: "KinkCert for serving the Kubernetes API",
 		BaseName: kubeadmconstants.APIServerCertAndKeyBaseName,
-		CAName:   "ca",
+		CAName:   "root",
 		config: pkiutil.CertConfig{
 			Config: certutil.Config{
 				CommonName: kubeadmconstants.APIServerCertCommonName,
@@ -342,10 +342,10 @@ func getAPIServerAltNames(cluster *clusterv1.Cluster) (*certutil.AltNames, error
 // KinkCertKubeletClient is the definition of the cert used by the API server to access the kubelet.
 func KinkCertKubeletClient() *KinkCert {
 	return &KinkCert{
-		Name:     "apiserver-kubelet-client",
+		Name:     "kubelet-client",
 		LongName: "KinkCert for the API server to connect to kubelet",
 		BaseName: kubeadmconstants.APIServerKubeletClientCertAndKeyBaseName,
-		CAName:   "ca",
+		CAName:   "root",
 		config: pkiutil.CertConfig{
 			Config: certutil.Config{
 				CommonName:   kubeadmconstants.APIServerKubeletClientCertCommonName,
