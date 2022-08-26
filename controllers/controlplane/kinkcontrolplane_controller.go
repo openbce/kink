@@ -19,9 +19,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"os"
-
 	"github.com/pkg/errors"
 
 	v1 "k8s.io/api/core/v1"
@@ -30,8 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apiserver/pkg/storage/names"
-	"k8s.io/utils/pointer"
-
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -108,20 +103,19 @@ func (r *KinkControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	// Step 4: lookup or create KinkMachine of this KinkControlPlane
-	machines, err := r.lookupOrCreateMachines(ctx, cluster, kcp)
-	if err != nil {
+	if err := r.lookupOrCreateMachines(ctx, cluster, kcp); err != nil {
 		return ctrl.Result{Requeue: true}, err
 	}
 
 	// Step 5: update KinkControlPlane's status accordingly
-	if err := r.updateKinkCtlPlaneStatus(ctx, kcp, machines); err != nil {
+	if err := r.updateKinkCtlPlaneStatus(ctx, kcp); err != nil {
 		return ctrl.Result{Requeue: true}, err
 	}
 
 	return ctrl.Result{}, nil
 }
 
-func (r *KinkControlPlaneReconciler) lookupOrCreateMachines(ctx context.Context, cluster *clusterv1.Cluster, kcp *ctrlv1beta1.KinkControlPlane) (*infrav1beta1.KinkMachineList, error) {
+func (r *KinkControlPlaneReconciler) lookupOrCreateMachines(ctx context.Context, cluster *clusterv1.Cluster, kcp *ctrlv1beta1.KinkControlPlane) error {
 	logger := log.FromContext(ctx)
 
 	kms := &infrav1beta1.KinkMachineList{}
@@ -131,7 +125,7 @@ func (r *KinkControlPlaneReconciler) lookupOrCreateMachines(ctx context.Context,
 			clusterv1.ClusterLabelName: cluster.Name,
 		},
 	); err != nil {
-		return nil, errors.Wrap(err, "failed to list machines")
+		return errors.Wrap(err, "failed to list machines")
 	}
 
 	var replicas int32
@@ -139,14 +133,8 @@ func (r *KinkControlPlaneReconciler) lookupOrCreateMachines(ctx context.Context,
 		replicas = *kcp.Spec.Replicas
 	}
 
-	owner := metav1.OwnerReference{
-		APIVersion:         ctrlv1beta1.GroupVersion.String(),
-		Kind:               "KinkControlPlane",
-		Name:               kcp.Name,
-		UID:                kcp.UID,
-		Controller:         pointer.BoolPtr(true),
-		BlockOwnerDeletion: pointer.BoolPtr(true),
-	}
+	owner := metav1.NewControllerRef(kcp,
+		ctrlv1beta1.GroupVersion.WithKind("KinkControlPlane"))
 
 	for i := len(kms.Items); int32(i) < replicas; i++ {
 		m := infrav1beta1.KinkMachine{
@@ -157,7 +145,7 @@ func (r *KinkControlPlaneReconciler) lookupOrCreateMachines(ctx context.Context,
 					clusterv1.ClusterLabelName:             cluster.Name,
 					clusterv1.MachineControlPlaneLabelName: "",
 				},
-				OwnerReferences: []metav1.OwnerReference{owner},
+				OwnerReferences: []metav1.OwnerReference{*owner},
 			},
 			Spec: infrav1beta1.KinkMachineSpec{
 				Version: kcp.Spec.Version,
@@ -176,25 +164,26 @@ func (r *KinkControlPlaneReconciler) lookupOrCreateMachines(ctx context.Context,
 		}
 	}
 
-	// if KinkMachineList does not match replica, refresh it from apiserver.
-	if len(kms.Items) != int(replicas) {
-		kms = &infrav1beta1.KinkMachineList{}
-		if err := r.Client.List(ctx, kms,
-			client.InNamespace(cluster.Namespace),
-			client.MatchingLabels{
-				clusterv1.ClusterLabelName: cluster.Name,
-			},
-		); err != nil {
-			return nil, errors.Wrap(err, "failed to list machines")
-		}
-	}
-
-	return kms, nil
+	return nil
 }
 
-func (r *KinkControlPlaneReconciler) updateKinkCtlPlaneStatus(ctx context.Context, kcp *ctrlv1beta1.KinkControlPlane, kms *infrav1beta1.KinkMachineList) error {
+func (r *KinkControlPlaneReconciler) updateKinkCtlPlaneStatus(ctx context.Context, kcp *ctrlv1beta1.KinkControlPlane) error {
+	kms := &infrav1beta1.KinkMachineList{}
+	if err := r.Client.List(ctx, kms,
+		client.InNamespace(kcp.Namespace),
+		client.MatchingLabels{
+			clusterv1.ClusterLabelName: kcp.Spec.ClusterName,
+		},
+	); err != nil {
+		return errors.Wrap(err, "failed to list machines")
+	}
+
 	var readyReplicas, unavailableReplicas int32
 	for _, m := range kms.Items {
+		if !metav1.IsControlledBy(&m, kcp) {
+			continue
+		}
+
 		if m.Status.Ready {
 			readyReplicas++
 		} else {
@@ -256,24 +245,4 @@ func (r *KinkControlPlaneReconciler) ClusterToKinkCtrlPlane(o client.Object) []r
 		}
 	}
 	return nil
-}
-
-func persistKubeConf(data []byte) (*string, error) {
-	// Create our Temp File:  This will create a filename like /tmp/prefix-123456
-	// We can use a pattern of "pre-*.txt" to get an extension like: /tmp/pre-123456.txt
-	tmpFile, err := ioutil.TempFile(os.TempDir(), "kubeconf-")
-	if err != nil {
-		return nil, err
-	}
-
-	defer func() {
-		tmpFile.Close()
-	}()
-
-	if _, err = tmpFile.Write(data); err != nil {
-		return nil, err
-	}
-
-	kc := tmpFile.Name()
-	return &kc, nil
 }
