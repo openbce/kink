@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"openbce.io/kink/apis/controlplane/v1beta1"
+	ctrlv1beta1 "openbce.io/kink/apis/controlplane/v1beta1"
 )
 
 // NewCertificatesManager will create a cert manager to generate all related CAs for the master.
@@ -39,7 +39,7 @@ import (
 //     front-proxy-ca:
 //     kubelet-ca:
 //     sa-ca:
-func NewCertificatesManager(ctx context.Context, r client.Client, cluster *clusterv1.Cluster, kcp *v1beta1.KinkControlPlane) *CertificatesManager {
+func NewCertificatesManager(ctx context.Context, r client.Client, cluster *clusterv1.Cluster, kcp *ctrlv1beta1.KinkControlPlane) *CertificatesManager {
 	return &CertificatesManager{
 		ctx:     ctx,
 		r:       r,
@@ -51,7 +51,7 @@ func NewCertificatesManager(ctx context.Context, r client.Client, cluster *clust
 type CertificatesManager struct {
 	ctx     context.Context
 	r       client.Client
-	kcp     *v1beta1.KinkControlPlane
+	kcp     *ctrlv1beta1.KinkControlPlane
 	cluster *clusterv1.Cluster
 }
 
@@ -81,7 +81,7 @@ func (c *CertificatesManager) LookupOrGenerateCAs() error {
 	return nil
 }
 
-func (c *CertificatesManager) LookupOrGenerateKubeconfig(kcp *v1beta1.KinkControlPlane, cluster *clusterv1.Cluster) error {
+func (c *CertificatesManager) LookupOrGenerateKubeconfig(kcp *ctrlv1beta1.KinkControlPlane, cluster *clusterv1.Cluster) error {
 	clusterName := types.NamespacedName{
 		Namespace: cluster.Namespace,
 		Name:      cluster.Name,
@@ -90,7 +90,7 @@ func (c *CertificatesManager) LookupOrGenerateKubeconfig(kcp *v1beta1.KinkContro
 	endpoint := cluster.Spec.ControlPlaneEndpoint
 
 	ownerRef := metav1.NewControllerRef(kcp,
-		v1beta1.GroupVersion.WithKind("KinkControlPlane"))
+		ctrlv1beta1.GroupVersion.WithKind("KinkControlPlane"))
 
 	err := kubeconfig.CreateSecretWithOwner(c.ctx, c.r, clusterName, endpoint.String(), *ownerRef)
 	if err != nil {

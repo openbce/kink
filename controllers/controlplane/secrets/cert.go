@@ -22,16 +22,13 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net"
-
-	"sigs.k8s.io/cluster-api/util/certs"
-	"sigs.k8s.io/cluster-api/util/secret"
 
 	"github.com/pkg/errors"
 
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	certutil "k8s.io/client-go/util/cert"
 	kubeadmconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
@@ -39,10 +36,11 @@ import (
 	netutils "k8s.io/utils/net"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-
+	"sigs.k8s.io/cluster-api/util/certs"
+	"sigs.k8s.io/cluster-api/util/secret"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	controlplanev1 "openbce.io/kink/apis/controlplane/v1beta1"
+	ctrlv1beta1 "openbce.io/kink/apis/controlplane/v1beta1"
 )
 
 var certNameFmt = "%s-%s"
@@ -71,7 +69,7 @@ func (c *KinkCert) GetConfig(cluster *clusterv1.Cluster) (*pkiutil.CertConfig, e
 }
 
 func createCASecret(ctx context.Context, r client.Client,
-	kcp *controlplanev1.KinkControlPlane, cluster *clusterv1.Cluster,
+	kcp *ctrlv1beta1.KinkControlPlane, cluster *clusterv1.Cluster,
 	k *KinkCert, crt *x509.Certificate, key crypto.Signer) error {
 
 	caName := types.NamespacedName{
@@ -96,7 +94,7 @@ func createCASecret(ctx context.Context, r client.Client,
 }
 
 func createSASecret(ctx context.Context, r client.Client,
-	kcp *controlplanev1.KinkControlPlane, cluster *clusterv1.Cluster,
+	kcp *ctrlv1beta1.KinkControlPlane, cluster *clusterv1.Cluster,
 	name string, pub *rsa.PublicKey, key *rsa.PrivateKey) error {
 
 	caName := types.NamespacedName{
@@ -120,10 +118,10 @@ func createSASecret(ctx context.Context, r client.Client,
 	return nil
 }
 
-func buildSASecret(kcp *controlplanev1.KinkControlPlane, cluster *clusterv1.Cluster,
+func buildSASecret(kcp *ctrlv1beta1.KinkControlPlane, cluster *clusterv1.Cluster,
 	name string, crt *rsa.PublicKey, key *rsa.PrivateKey) *v1.Secret {
 	controllerRef := metav1.NewControllerRef(kcp,
-		controlplanev1.GroupVersion.WithKind("KinkControlPlane"))
+		ctrlv1beta1.GroupVersion.WithKind("KinkControlPlane"))
 
 	pub, err := certs.EncodePublicKeyPEM(crt)
 	if err != nil {
@@ -149,9 +147,9 @@ func buildSASecret(kcp *controlplanev1.KinkControlPlane, cluster *clusterv1.Clus
 	return sec
 }
 
-func buildCertSecret(kcp *controlplanev1.KinkControlPlane, cluster *clusterv1.Cluster, k *KinkCert, crt *x509.Certificate, key crypto.Signer) *v1.Secret {
+func buildCertSecret(kcp *ctrlv1beta1.KinkControlPlane, cluster *clusterv1.Cluster, k *KinkCert, crt *x509.Certificate, key crypto.Signer) *v1.Secret {
 	controllerRef := metav1.NewControllerRef(kcp,
-		controlplanev1.GroupVersion.WithKind("KinkControlPlane"))
+		ctrlv1beta1.GroupVersion.WithKind("KinkControlPlane"))
 
 	sec := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -172,7 +170,7 @@ func buildCertSecret(kcp *controlplanev1.KinkControlPlane, cluster *clusterv1.Cl
 }
 
 // CreateFromCA makes and writes a certificate using the given CA cert and key.
-func (k *KinkCert) CreateFromCA(ctx context.Context, r client.Client, kcp *controlplanev1.KinkControlPlane, cluster *clusterv1.Cluster, caCert *x509.Certificate, caKey crypto.Signer) error {
+func (k *KinkCert) CreateFromCA(ctx context.Context, r client.Client, kcp *ctrlv1beta1.KinkControlPlane, cluster *clusterv1.Cluster, caCert *x509.Certificate, caKey crypto.Signer) error {
 	cfg, err := k.GetConfig(cluster)
 	if err != nil {
 		return errors.Wrapf(err, "couldn't create %q certificate", k.Name)
@@ -193,7 +191,7 @@ func (k *KinkCert) CreateFromCA(ctx context.Context, r client.Client, kcp *contr
 type CertificateTree map[*KinkCert]Certificates
 
 // CreateTree creates the CAs, certs signed by the CAs, and writes them all to disk.
-func (t CertificateTree) CreateTree(ctx context.Context, r client.Client, kcp *controlplanev1.KinkControlPlane, cluster *clusterv1.Cluster) error {
+func (t CertificateTree) CreateTree(ctx context.Context, r client.Client, kcp *ctrlv1beta1.KinkControlPlane, cluster *clusterv1.Cluster) error {
 	for ca, leaves := range t {
 		cfg, err := ca.GetConfig(cluster)
 		if err != nil {

@@ -103,7 +103,7 @@ func (r *KinkControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	// Step 3: generate kubeconfig for bootstraps
-	if err := certs.LookupOrGenerateKubeconfig(); err != nil {
+	if err := certs.LookupOrGenerateKubeconfig(kcp, cluster); err != nil {
 		return ctrl.Result{Requeue: true}, errors.Wrap(err, "failed to retrieve kubeconfig Secret")
 	}
 
