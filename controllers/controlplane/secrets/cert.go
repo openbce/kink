@@ -175,6 +175,7 @@ func (k *KinkCert) CreateFromCA(ctx context.Context, r client.Client, kcp *ctrlv
 	if err != nil {
 		return errors.Wrapf(err, "couldn't create %q certificate", k.Name)
 	}
+
 	cert, key, err := pkiutil.NewCertAndKey(caCert, caKey, cfg)
 	if err != nil {
 		return err
@@ -268,7 +269,7 @@ func GetCerts() Certificates {
 // KinkCertRootCA is the definition of the Kubernetes Root CA for the API Server and kubelet.
 func KinkCertRootCA() *KinkCert {
 	return &KinkCert{
-		Name:     "root",
+		Name:     "ca",
 		LongName: "self-signed Kubernetes CA to provision identities for other Kubernetes components",
 		BaseName: kubeadmconstants.CACertAndKeyBaseName,
 		config: pkiutil.CertConfig{
@@ -282,10 +283,10 @@ func KinkCertRootCA() *KinkCert {
 // KinkCertAPIServer is the definition of the cert used to serve the Kubernetes API.
 func KinkCertAPIServer() *KinkCert {
 	return &KinkCert{
-		Name:     "ca",
+		Name:     "apiserver",
 		LongName: "KinkCert for serving the Kubernetes API",
 		BaseName: kubeadmconstants.APIServerCertAndKeyBaseName,
-		CAName:   "root",
+		CAName:   "ca",
 		config: pkiutil.CertConfig{
 			Config: certutil.Config{
 				CommonName: kubeadmconstants.APIServerCertCommonName,
@@ -294,8 +295,9 @@ func KinkCertAPIServer() *KinkCert {
 		},
 		configMutators: []configMutatorsFunc{
 			func(cfg *pkiutil.CertConfig, cluster *clusterv1.Cluster) {
-				if altNames, err := getAPIServerAltNames(cluster); err != nil {
-					cfg.AltNames = *altNames
+				if altNames, err := getAPIServerAltNames(cluster); err == nil {
+					cfg.AltNames.IPs = append(cfg.AltNames.IPs, altNames.IPs...)
+					cfg.AltNames.DNSNames = append(cfg.AltNames.DNSNames, altNames.DNSNames...)
 				}
 			},
 		},
@@ -319,11 +321,15 @@ func getAPIServerAltNames(cluster *clusterv1.Cluster) (*certutil.AltNames, error
 			"kubernetes",
 			"kubernetes.default",
 			"kubernetes.default.svc",
-			fmt.Sprintf("kubernetes.default.svc.%s", cluster.Spec.ClusterNetwork.ServiceDomain),
 		},
 		IPs: []net.IP{
 			internalAPIServerVirtualIP,
 		},
+	}
+
+	if len(cluster.Spec.ClusterNetwork.ServiceDomain) > 0 {
+		altNames.DNSNames = append(altNames.DNSNames,
+			fmt.Sprintf("kubernetes.default.svc.%s", cluster.Spec.ClusterNetwork.ServiceDomain))
 	}
 
 	// add cluster controlPlaneEndpoint if present (dns or ip)
@@ -345,7 +351,7 @@ func KinkCertKubeletClient() *KinkCert {
 		Name:     "kubelet-client",
 		LongName: "KinkCert for the API server to connect to kubelet",
 		BaseName: kubeadmconstants.APIServerKubeletClientCertAndKeyBaseName,
-		CAName:   "root",
+		CAName:   "ca",
 		config: pkiutil.CertConfig{
 			Config: certutil.Config{
 				CommonName:   kubeadmconstants.APIServerKubeletClientCertCommonName,

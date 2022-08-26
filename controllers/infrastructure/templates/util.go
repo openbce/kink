@@ -39,8 +39,8 @@ func getSecretVolumes(cluster *clusterv1.Cluster) ([]v1.Volume, []v1.VolumeMount
 	var mounts []v1.VolumeMount
 
 	certs := []string{
-		"root",
 		"ca",
+		"apiserver",
 		"kubelet-client",
 		"front-proxy-ca",
 		"front-proxy-client",
