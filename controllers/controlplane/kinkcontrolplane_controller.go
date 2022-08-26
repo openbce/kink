@@ -39,13 +39,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util/kubeconfig"
-	"sigs.k8s.io/cluster-api/util/secret"
-
 	ctrlv1beta1 "openbce.io/kink/apis/controlplane/v1beta1"
 	infrav1beta1 "openbce.io/kink/apis/infrastructure/v1beta1"
+	"openbce.io/kink/controllers/controlplane/secrets"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // KinkControlPlaneReconciler reconciles a KinkControlPlane object
@@ -91,44 +88,22 @@ func (r *KinkControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, nil
 	}
 
+	// If ControlPlaneEndpoint is not set, return early
+	endpoint := cluster.Spec.ControlPlaneEndpoint
+	if !cluster.Spec.ControlPlaneEndpoint.IsValid() || endpoint.IsZero() {
+		logger.Info("Cluster does not yet have a ControlPlaneEndpoint defined")
+		return ctrl.Result{}, nil
+	}
+
 	// Step 2: generate CA & kubeconf for control plane & data plane
-	bsConfig := &bootstrapv1.ClusterConfiguration{}
-	certs := secret.NewCertificatesForInitialControlPlane(bsConfig)
-	err := certs.LookupOrGenerate(ctx, r.Client, clusterName,
-		*metav1.NewControllerRef(kcp, ctrlv1beta1.GroupVersion.WithKind("KinkControlPlane")))
-	if err != nil {
+	certs := secrets.NewCertificatesManager(ctx, r.Client, cluster, kcp)
+	if err := certs.LookupOrGenerateCAs(); err != nil {
 		logger.Error(err, "Failed to find certifications for KinkControlPlane", "KinkControlPlane", kcp)
 		return ctrl.Result{Requeue: true}, nil
 	}
 
 	// Step 3: generate kubeconfig for bootstraps
-	// If ControlPlaneEndpoint is not set, return early
-	if !cluster.Spec.ControlPlaneEndpoint.IsValid() {
-		logger.Info("Cluster does not yet have a ControlPlaneEndpoint defined")
-		return ctrl.Result{}, nil
-	}
-
-	endpoint := cluster.Spec.ControlPlaneEndpoint
-	if endpoint.IsZero() {
-		logger.Error(fmt.Errorf("invalid api endpoint"),
-			"The endpoint of ctrl plane is invalid.", "endpoint", endpoint)
-		return ctrl.Result{}, nil
-	}
-
-	ownerRef := *metav1.NewControllerRef(kcp, ctrlv1beta1.GroupVersion.WithKind("KinkControlPlane"))
-	_, err = secret.GetFromNamespacedName(ctx, r.Client, clusterName, secret.Kubeconfig)
-	switch {
-	case apierrors.IsNotFound(err):
-		if createErr := kubeconfig.CreateSecretWithOwner(
-			ctx,
-			r.Client,
-			clusterName,
-			endpoint.String(),
-			ownerRef,
-		); createErr != nil {
-			return ctrl.Result{Requeue: true}, nil
-		}
-	case err != nil:
+	if err := certs.LookupOrGenerateKubeconfig(); err != nil {
 		return ctrl.Result{Requeue: true}, errors.Wrap(err, "failed to retrieve kubeconfig Secret")
 	}
 
