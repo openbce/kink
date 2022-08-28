@@ -84,24 +84,24 @@ func (c *CertificatesManager) LookupOrGenerateCAs() error {
 	return nil
 }
 
-func (c *CertificatesManager) LookupOrGenerateKubeconfig(kcp *ctrlv1beta1.KinkControlPlane, cluster *clusterv1.Cluster) error {
+func (c *CertificatesManager) LookupOrGenerateKubeconfig() error {
 	clusterName := types.NamespacedName{
-		Namespace: cluster.Namespace,
-		Name:      cluster.Name,
+		Namespace: c.cluster.Namespace,
+		Name:      c.cluster.Name,
 	}
 
 	kcName := types.NamespacedName{
-		Namespace: cluster.Namespace,
-		Name:      secret.Name(cluster.Name, secret.Kubeconfig),
+		Namespace: c.cluster.Namespace,
+		Name:      secret.Name(c.cluster.Name, secret.Kubeconfig),
 	}
 
 	kc := &v1.Secret{}
 	if err := c.r.Get(c.ctx, kcName, kc); err != nil {
 		if apierrors.IsNotFound(err) {
-			ownerRef := metav1.NewControllerRef(kcp,
+			ownerRef := metav1.NewControllerRef(c.kcp,
 				ctrlv1beta1.GroupVersion.WithKind("KinkControlPlane"))
 
-			endpoint := cluster.Spec.ControlPlaneEndpoint
+			endpoint := c.cluster.Spec.ControlPlaneEndpoint
 			if err := kubeconfig.CreateSecretWithOwner(c.ctx, c.r, clusterName, endpoint.String(), *ownerRef); err != nil {
 				return err
 			}
