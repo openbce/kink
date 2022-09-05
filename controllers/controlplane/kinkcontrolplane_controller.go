@@ -19,6 +19,9 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
+
 	"github.com/pkg/errors"
 
 	v1 "k8s.io/api/core/v1"
@@ -81,6 +84,28 @@ func (r *KinkControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if !cluster.Status.InfrastructureReady {
 		logger.Info("Waiting for cluster infrastructure ready.", "cluster", cluster)
 		return ctrl.Result{}, nil
+	}
+
+	if launch, found := os.LookupEnv("KINK_LAUNCH_CTRL_PLANE"); found {
+		if l, err := strconv.ParseBool(launch); err == nil && !l {
+			// Declare that Node objects do not exist in the cluster
+			kcp.Status.ExternalManagedControlPlane = true
+			kcp.Status.Initialized = true
+			kcp.Status.Ready = true
+
+			// TODO: get control-plane nodes from pre-installed k8s.
+			kcp.Status.ReadyReplicas = 1
+			kcp.Status.UnavailableReplicas = 0
+
+			logger.Info("Update kcp status with pre-installed k8s.", "kcp", kcp)
+
+			if err := r.Status().Update(ctx, kcp); err != nil {
+				logger.Error(err, "Failed to update kcp status.", "kcp", kcp)
+				return ctrl.Result{Requeue: true}, nil
+			}
+
+			return ctrl.Result{}, nil
+		}
 	}
 
 	// If ControlPlaneEndpoint is not set, return early
