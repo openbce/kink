@@ -191,6 +191,8 @@ func (r *KinkMachineReconciler) getControlPlanePodTemplates(cluster *clusterv1.C
 
 	res[infrav1beta1.ETCD] = templates.EtcdPodTemplate(cluster, machine)
 	res[infrav1beta1.ApiServer] = templates.ApiServerPodTemplate(cluster, machine)
+	res[infrav1beta1.ControllerManager] = templates.ControllerManagerPodTemplate(cluster, machine)
+	res[infrav1beta1.Scheduler] = templates.SchedulerPodTemplate(cluster, machine)
 
 	return res
 }

@@ -28,9 +28,11 @@ type ControlPlaneRole string
 const (
 	ControlPlaneRoleLabelName = "kink.openbce.io/role"
 
-	ApiServer ControlPlaneRole = "apiserver"
-	ETCD      ControlPlaneRole = "etcd"
-	Unkonwn   ControlPlaneRole = "unknown"
+	ApiServer         ControlPlaneRole = "apiserver"
+	Scheduler         ControlPlaneRole = "scheduler"
+	ControllerManager ControlPlaneRole = "controller-manager"
+	ETCD              ControlPlaneRole = "etcd"
+	Unkonwn           ControlPlaneRole = "unknown"
 )
 
 // KinkMachineSpec defines the desired state of KinkMachine

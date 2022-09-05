@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/utils/pointer"
+
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
 	infrav1beta1 "openbce.io/kink/apis/infrastructure/v1beta1"
@@ -35,14 +36,8 @@ const (
 )
 
 func EtcdServiceTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.KinkMachine) *v1.Service {
-	owner := metav1.OwnerReference{
-		APIVersion:         infrav1beta1.GroupVersion.String(),
-		Kind:               "KinkMachine",
-		Name:               machine.Name,
-		UID:                machine.UID,
-		Controller:         pointer.BoolPtr(true),
-		BlockOwnerDeletion: pointer.BoolPtr(true),
-	}
+	owner := metav1.NewControllerRef(machine,
+		infrav1beta1.GroupVersion.WithKind("KinkMachine"))
 
 	return &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -52,7 +47,7 @@ func EtcdServiceTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.KinkM
 				clusterv1.ClusterLabelName:             cluster.Name,
 				infrav1beta1.ControlPlaneRoleLabelName: string(infrav1beta1.ETCD),
 			},
-			OwnerReferences: []metav1.OwnerReference{owner},
+			OwnerReferences: []metav1.OwnerReference{*owner},
 		},
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{
