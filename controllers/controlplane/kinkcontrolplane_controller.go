@@ -90,10 +90,14 @@ func (r *KinkControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		if l, err := strconv.ParseBool(launch); err == nil && !l {
 			// Declare that Node objects do not exist in the cluster
 			kcp.Status.ExternalManagedControlPlane = true
+			
+			// TODO (k82cn): 
+			//   1. get control-plane nodes number from pre-installed k8s
+			//   2. check <cluster-name>-kubeconfig & <cluster-name>-ca are existed
+			//   3. make sure `spec.Endpoints` & `apiserver of kubeconfig` consistent
 			kcp.Status.Initialized = true
 			kcp.Status.Ready = true
 
-			// TODO: get control-plane nodes from pre-installed k8s.
 			kcp.Status.ReadyReplicas = 1
 			kcp.Status.UnavailableReplicas = 0
 
