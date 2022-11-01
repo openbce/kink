@@ -29,7 +29,7 @@ import (
 	infrav1beta1 "openbce.io/kink/apis/infrastructure/v1beta1"
 )
 
-func ApiServerPodTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.KinkMachine) *v1.Pod {
+func SchedulerPodTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.KinkMachine) *v1.Pod {
 	owner := metav1.NewControllerRef(machine,
 		infrav1beta1.GroupVersion.WithKind("KinkMachine"))
 
@@ -57,7 +57,7 @@ func ApiServerPodTemplate(cluster *clusterv1.Cluster, machine *infrav1beta1.Kink
 			Containers: []v1.Container{
 				{
 					Name:    "apiserver",
-					Image:   "openbce/kube-apiserver:v1.24.1",
+					Image:   "openbce/kube-scheduler:v1.24.1",
 					Env:     []v1.EnvVar{hostIPEnvVar},
 					Command: []string{"/bin/sh", "-c"},
 					Args: []string{strings.Join([]string{
