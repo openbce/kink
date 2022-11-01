@@ -34,18 +34,25 @@ var hostIPEnvVar = v1.EnvVar{
 	},
 }
 
+var certs = []string{
+	"ca",
+	"apiserver",
+	"kubelet-client",
+	"front-proxy-ca",
+	"front-proxy-client",
+	"sa",
+}
+
+type certPath struct {
+	crt string
+	key string
+}
+
+var certPaths = map[string]certPath{}
+
 func getSecretVolumes(cluster *clusterv1.Cluster) ([]v1.Volume, []v1.VolumeMount) {
 	var volumes []v1.Volume
 	var mounts []v1.VolumeMount
-
-	certs := []string{
-		"ca",
-		"apiserver",
-		"kubelet-client",
-		"front-proxy-ca",
-		"front-proxy-client",
-		"sa",
-	}
 
 	// Add certs
 	for _, cert := range certs {
